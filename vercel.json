@@ -10,6 +10,12 @@
       "use": "@vercel/node"
     }
   ],
+  "functions": {
+    "server/src/index.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  },
   "routes": [
     {
       "src": "/(api|health)(.*)",
@@ -17,10 +23,6 @@
     },
     {
       "handle": "filesystem"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "client/dist/assets/$1"
     },
     {
       "src": "/(.*)",
