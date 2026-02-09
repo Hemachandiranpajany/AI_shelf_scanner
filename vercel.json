@@ -3,10 +3,7 @@
   "builds": [
     {
       "src": "client/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "use": "@vercel/static-build"
     },
     {
       "src": "server/src/index.ts",
@@ -19,8 +16,20 @@
       "dest": "server/src/index.ts"
     },
     {
+      "src": "/assets/(.*)",
+      "dest": "client/dist/assets/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "client/dist/favicon.ico"
+    },
+    {
+      "src": "/vite.svg",
+      "dest": "client/dist/vite.svg"
+    },
+    {
       "src": "/(.*)",
-      "dest": "client/dist/$1"
+      "dest": "client/dist/index.html"
     }
   ],
   "env": {

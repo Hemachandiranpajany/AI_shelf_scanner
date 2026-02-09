@@ -15,7 +15,12 @@ const Results: React.FC<ResultsProps> = ({ sessionId, onBack }) => {
   const [activeTab, setActiveTab] = useState<'detected' | 'recommendations'>('detected');
 
   useEffect(() => {
-    pollResults();
+    if (sessionId) {
+      pollResults();
+    } else {
+      setError('Invalid session ID');
+      setStatus('failed');
+    }
   }, [sessionId]);
 
   const pollResults = async () => {
@@ -41,7 +46,8 @@ const Results: React.FC<ResultsProps> = ({ sessionId, onBack }) => {
           setStatus('failed');
         }
       } catch (err: any) {
-        setError(err.response?.data?.error || 'Failed to get results');
+        const errorMessage = err.response?.data?.error;
+        setError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage) || 'Failed to get results');
         setStatus('failed');
       }
     };

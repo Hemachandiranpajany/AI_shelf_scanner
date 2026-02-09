@@ -47,7 +47,8 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
       const result = await scanApi.uploadImage(selectedFile);
       onScanComplete(result.sessionId);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to upload image');
+      const errorMessage = err.response?.data?.error;
+      setError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage) || 'Failed to upload image');
     } finally {
       setIsUploading(false);
     }
@@ -77,8 +78,8 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
               onChange={handleFileSelect}
               style={{ display: 'none' }}
             />
-            
-            <button 
+
+            <button
               className="btn btn-primary btn-large"
               onClick={handleCameraCapture}
             >
@@ -100,9 +101,9 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
         ) : (
           <div className="preview-area">
             <img src={preview} alt="Preview" className="preview-image" />
-            
+
             <div className="preview-actions">
-              <button 
+              <button
                 className="btn btn-secondary"
                 onClick={() => {
                   setSelectedFile(null);
@@ -111,7 +112,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
               >
                 Choose Different Photo
               </button>
-              
+
               <button
                 className="btn btn-primary"
                 onClick={handleUpload}

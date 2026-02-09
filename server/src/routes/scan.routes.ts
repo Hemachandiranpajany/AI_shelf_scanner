@@ -46,16 +46,16 @@ router.post('/', upload.single('image'), async (req: Request, res: Response) => 
 
     const sessionId = sessionResult.rows[0].id;
 
-    // Start async processing
-    processImage(sessionId, file.buffer, userId).catch(error => {
-      logger.error('Image processing failed', { sessionId, error });
+    // Await the processing to ensure it completes before the Lambda shuts down
+    // Vercel free tier limits are 10s, but awaiting gives it the best chance.
+    await processImage(sessionId, file.buffer, userId).catch(err => {
+      logger.error('Background processing error', err);
     });
 
-    res.status(202).json({
+    return res.json({
+      message: 'Scan started',
       sessionId,
-      sessionToken,
-      status: 'processing',
-      message: 'Image is being processed. Poll /api/scan/:sessionId for results.'
+      status: 'processing'
     });
 
   } catch (error) {
