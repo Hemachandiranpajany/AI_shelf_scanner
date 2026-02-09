@@ -221,18 +221,25 @@ async function processImage(sessionId: string, imageBuffer: Buffer, userId?: str
         readingHistory
       );
 
+      // Enrich recommendations with Google Books metadata
+      const enrichedRecs = await googleBooksService.enrichBookData(
+        recommendations.map(r => ({ title: r.title, author: r.author }))
+      );
+
       for (let i = 0; i < recommendations.length; i++) {
         const rec = recommendations[i];
+        const metadata = enrichedRecs[i] || {};
+
         await db.query(
           `INSERT INTO recommendations 
-           (scan_session_id, detected_book_id, user_id, title, author, recommendation_score, reasoning, rank)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [sessionId, null, userId || null, rec.title, rec.author, rec.score, rec.reasoning, i + 1]
+           (scan_session_id, detected_book_id, user_id, title, author, recommendation_score, reasoning, rank, metadata)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [sessionId, null, userId || null, rec.title, rec.author, rec.score, rec.reasoning, i + 1, JSON.stringify(metadata)]
         );
       }
-      logger.info('Batch recommendations completed', { sessionId });
+      logger.info('Batch recommendations completed with enrichment', { sessionId });
     } catch (batchError: any) {
-      logger.error('Failed to generate batch recommendations', { sessionId, error: batchError.message });
+      logger.error('Failed to generate or enrich batch recommendations', { sessionId, error: batchError.message });
     }
 
     // Step 5: Update session status

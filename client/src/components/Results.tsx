@@ -118,11 +118,12 @@ const Results: React.FC<ResultsProps> = ({ sessionId, onBack }) => {
 };
 
 const BookCard: React.FC<{ book: Book }> = ({ book }) => {
+  const metadata = book.metadata || {};
   return (
     <div className="book-card">
-      {book.metadata.thumbnail && (
-        <img 
-          src={book.metadata.thumbnail} 
+      {metadata.thumbnail && (
+        <img
+          src={metadata.thumbnail}
           alt={book.title}
           className="book-thumbnail"
         />
@@ -133,16 +134,16 @@ const BookCard: React.FC<{ book: Book }> = ({ book }) => {
         <div className="confidence-badge">
           {Math.round(book.confidence_score * 100)}% confident
         </div>
-        {book.metadata.categories && (
+        {metadata.categories && (
           <div className="categories">
-            {book.metadata.categories.slice(0, 3).map((cat, idx) => (
+            {metadata.categories.slice(0, 3).map((cat: string, idx: number) => (
               <span key={idx} className="category-tag">{cat}</span>
             ))}
           </div>
         )}
-        {book.metadata.averageRating && (
+        {metadata.averageRating && (
           <div className="rating">
-            ⭐ {book.metadata.averageRating.toFixed(1)} ({book.metadata.ratingsCount} ratings)
+            ⭐ {metadata.averageRating.toFixed(1)} ({metadata.ratingsCount} ratings)
           </div>
         )}
       </div>
@@ -151,6 +152,7 @@ const BookCard: React.FC<{ book: Book }> = ({ book }) => {
 };
 
 const RecommendationCard: React.FC<{ recommendation: Recommendation }> = ({ recommendation }) => {
+  const metadata = recommendation.metadata || {};
   return (
     <div className="recommendation-card">
       <div className="recommendation-header">
@@ -159,28 +161,28 @@ const RecommendationCard: React.FC<{ recommendation: Recommendation }> = ({ reco
           {Math.round(recommendation.recommendation_score * 100)}% match
         </div>
       </div>
-      
-      {recommendation.metadata.thumbnail && (
-        <img 
-          src={recommendation.metadata.thumbnail} 
+
+      {metadata.thumbnail && (
+        <img
+          src={metadata.thumbnail}
           alt={recommendation.title}
           className="recommendation-thumbnail"
         />
       )}
-      
+
       <div className="recommendation-info">
         <h3>{recommendation.title}</h3>
         {recommendation.author && <p className="author">by {recommendation.author}</p>}
-        
+
         <div className="reasoning">
           <strong>Why we recommend this:</strong>
           <p>{recommendation.reasoning}</p>
         </div>
 
-        {recommendation.metadata.description && (
+        {metadata.description && (
           <details className="description">
             <summary>Read more</summary>
-            <p>{recommendation.metadata.description}</p>
+            <p>{metadata.description}</p>
           </details>
         )}
       </div>
