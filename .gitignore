@@ -1,0 +1,14 @@
+
+node_modules/
+.env
+dist/
+build/
+.DS_Store
+*.log
+npm-debug.log*
+.agent/
+.gemini/
+server/node_modules/
+client/node_modules/
+client/dist/
+server/dist/
