@@ -7,15 +7,13 @@
     },
     {
       "src": "server/src/index.ts",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "maxDuration": 60,
+        "memory": 1024
+      }
     }
   ],
-  "functions": {
-    "server/src/index.ts": {
-      "maxDuration": 60,
-      "memory": 1024
-    }
-  },
   "routes": [
     {
       "src": "/(api|health)(.*)",
