@@ -12,20 +12,15 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/(api|health)(.*)",
       "dest": "server/src/index.ts"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "src": "/assets/(.*)",
       "dest": "client/dist/assets/$1"
-    },
-    {
-      "src": "/favicon.ico",
-      "dest": "client/dist/favicon.ico"
-    },
-    {
-      "src": "/vite.svg",
-      "dest": "client/dist/vite.svg"
     },
     {
       "src": "/(.*)",

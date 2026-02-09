@@ -67,8 +67,13 @@ app.use((req, res, next) => {
   next();
 });
 
+// Basic health check for server awareness
+app.get('/', (_req, res) => {
+  res.json({ message: 'Shelf Scanner API is running', version: '1.0.0' });
+});
+
 // Health check endpoint
-app.get('/health', async (req, res) => {
+app.get('/health', async (_req, res) => {
   const dbHealth = await db.healthCheck();
 
   res.json({
