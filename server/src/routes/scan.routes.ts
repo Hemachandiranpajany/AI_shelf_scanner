@@ -1,10 +1,8 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
 import { db } from '../utils/database';
-import { logger } from '../utils/logger';
 import { encryption } from '../utils/encryption';
 import { geminiService } from '../services/gemini.service';
-import { googleBooksService } from '../services/googleBooks.service';
 import { AuthRequest } from '../types';
 
 const router = express.Router();
@@ -114,7 +112,7 @@ router.get('/:sessionId', async (req: Request, res: Response) => {
   const books = (await db.query(`SELECT * FROM detected_books WHERE scan_session_id = $1`, [sessionId])).rows;
   const recs = (await db.query(`SELECT * FROM recommendations WHERE scan_session_id = $1`, [sessionId])).rows;
 
-  res.json({ sessionId, status: session.status, detectedBooks: books, recommendations: recs });
+  return res.json({ sessionId, status: session.status, detectedBooks: books, recommendations: recs });
 });
 
 export default router;

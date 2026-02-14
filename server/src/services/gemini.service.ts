@@ -42,8 +42,8 @@ class GeminiService {
 
   async generateRecommendationsBatch(
     books: Array<{ title: string; author?: string }>,
-    userPreferences: unknown,
-    readingHistory: any[]
+    _userPreferences: unknown,
+    _readingHistory: any[]
   ): Promise<Array<{ title: string; author: string; score: number; reasoning: string }>> {
     this.ensureInitialized();
     try {
