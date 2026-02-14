@@ -3,20 +3,27 @@ import { logger } from '../utils/logger';
 import { GeminiResponse } from '../types';
 
 class GeminiService {
-  private genAI: GoogleGenerativeAI;
-  private model: any;
+  private genAI: GoogleGenerativeAI | null = null;
+  private model: any = null;
 
   constructor() {
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Lazy initialization to prevent cold start crashes
+  }
 
+  private ensureInitialized(): void {
+    if (this.genAI && this.model) return;
+
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY environment variable is required');
+      throw new Error('GEMINI_API_KEY environment variable is missing');
     }
 
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({
-      model: 'gemini-flash-latest'
+      model: 'gemini-1.5-flash'
     });
+
+    logger.info('Gemini AI Service initialized');
   }
 
   private async retryOperation<T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
@@ -41,6 +48,7 @@ class GeminiService {
   }
 
   async detectBooksFromImage(imageData: Buffer | string): Promise<GeminiResponse> {
+    this.ensureInitialized();
     try {
       const prompt = `Analyze this image of a bookshelf and identify all visible book spines. 
 For each book you can clearly read, extract:
@@ -79,7 +87,6 @@ Important guidelines:
           }
         };
       } else {
-        // Assuming base64 string
         imagePart = {
           inlineData: {
             data: imageData,
@@ -96,7 +103,6 @@ Important guidelines:
 
       logger.debug('Gemini raw response', { text: text.substring(0, 200) });
 
-      // Parse JSON response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('No valid JSON found in response');
@@ -104,7 +110,6 @@ Important guidelines:
 
       const parsed: GeminiResponse = JSON.parse(jsonMatch[0]);
 
-      // Validate response structure
       if (!parsed.books || !Array.isArray(parsed.books)) {
         throw new Error('Invalid response structure');
       }
@@ -127,6 +132,7 @@ Important guidelines:
     userPreferences: any,
     readingHistory: any[]
   ): Promise<Array<{ title: string; author: string; score: number; reasoning: string }>> {
+    this.ensureInitialized();
     try {
       const booksList = books.map((b, i) => `${i + 1}. "${b.title}"${b.author ? ` by ${b.author}` : ''}`).join('\n');
 
@@ -155,8 +161,7 @@ Return ONLY a valid JSON object with this structure:
       "author": "Suggested Author",
       "score": 0.85,
       "reasoning": "..."
-    },
-    ...
+    }
   ]
 }
 Provide exactly 5 high-quality recommendations.`;
