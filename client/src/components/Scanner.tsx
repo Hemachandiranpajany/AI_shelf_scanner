@@ -6,13 +6,42 @@ interface ScannerProps {
 }
 
 const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | Blob | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Compress image to ~1280px wide maximum (saves upload time & processing time)
+  const compressImage = async (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200;
+        const scale = MAX_WIDTH / img.width;
+
+        if (scale < 1) {
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scale;
+        } else {
+          canvas.width = img.width;
+          canvas.height = img.height;
+        }
+
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('Compression failed'));
+        }, 'image/jpeg', 0.8);
+      };
+      img.onerror = (err) => reject(err);
+    });
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -21,20 +50,18 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB');
-      return;
-    }
-
-    setSelectedFile(file);
+    setIsUploading(true);
     setError(null);
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImage(file);
+      setSelectedFile(compressed);
+      setPreview(URL.createObjectURL(compressed));
+    } catch (err) {
+      setError('Failed to process image');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleUpload = async () => {
@@ -44,29 +71,20 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
     setError(null);
 
     try {
-      const result = await scanApi.uploadImage(selectedFile);
+      const result = await scanApi.uploadImage(selectedFile as File);
       onScanComplete(result.sessionId);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error;
-      setError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage) || 'Failed to upload image');
+      setError(err.response?.data?.error || 'Failed to upload image');
     } finally {
       setIsUploading(false);
-    }
-  };
-
-  const handleCameraCapture = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
     }
   };
 
   return (
     <div className="scanner-container">
       <div className="scanner-card">
-        <h2>Scan Your Bookshelf</h2>
-        <p className="description">
-          Take a photo of your bookshelf to discover books and get personalized recommendations
-        </p>
+        <h2>Start Your Scan</h2>
+        <p className="description">Capture your bookshelf to get AI recommendations instantly.</p>
 
         {!preview ? (
           <div className="upload-area">
@@ -81,14 +99,14 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
 
             <button
               className="btn btn-primary btn-large"
-              onClick={handleCameraCapture}
+              onClick={() => fileInputRef.current?.click()}
             >
               📷 Take Photo
             </button>
 
             <div className="divider">or</div>
 
-            <label className="btn btn-secondary btn-large">
+            <label className="btn btn-secondary" style={{ cursor: 'pointer' }}>
               📁 Choose from Gallery
               <input
                 type="file"
@@ -101,7 +119,6 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
         ) : (
           <div className="preview-area">
             <img src={preview} alt="Preview" className="preview-image" />
-
             <div className="preview-actions">
               <button
                 className="btn btn-secondary"
@@ -110,7 +127,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
                   setPreview(null);
                 }}
               >
-                Choose Different Photo
+                Retake
               </button>
 
               <button
@@ -118,26 +135,16 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
                 onClick={handleUpload}
                 disabled={isUploading}
               >
-                {isUploading ? 'Uploading...' : 'Analyze Books'}
+                {isUploading ? 'Analysing...' : 'Find Books'}
               </button>
             </div>
           </div>
         )}
 
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
+        {error && <div className="error-message">{error}</div>}
 
         <div className="tips">
-          <h3>📌 Tips for best results:</h3>
-          <ul>
-            <li>Ensure good lighting</li>
-            <li>Keep camera parallel to bookshelf</li>
-            <li>Make sure book spines are clearly visible</li>
-            <li>Avoid glare and shadows</li>
-          </ul>
+          <p>💡 Tip: Make sure the book titles are readable for better accuracy.</p>
         </div>
       </div>
     </div>

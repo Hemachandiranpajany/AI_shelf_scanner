@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { scanApi } from '../utils/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import { Book, Recommendation } from '../types';
 
 interface ResultsProps {
@@ -11,57 +11,68 @@ const Results: React.FC<ResultsProps> = ({ sessionId, onBack }) => {
   const [status, setStatus] = useState<'loading' | 'completed' | 'failed'>('loading');
   const [detectedBooks, setDetectedBooks] = useState<Book[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [recStatus, setRecStatus] = useState<'none' | 'loading' | 'completed' | 'failed'>('none');
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'detected' | 'recommendations'>('detected');
+
+  const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+  const fetchRecommendations = useCallback(async () => {
+    if (recStatus !== 'none') return;
+    setRecStatus('loading');
+    try {
+      const response = await axios.get(`${API_URL}/scan/${sessionId}/recommendations`);
+      setRecommendations(response.data);
+      setRecStatus('completed');
+    } catch (err) {
+      setRecStatus('failed');
+    }
+  }, [sessionId, recStatus, API_URL]);
+
+  const pollResults = useCallback(async () => {
+    const poll = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/scan/${sessionId}`);
+        const result = response.data;
+
+        if (result.status === 'completed_detection' || result.status === 'completed') {
+          setDetectedBooks(result.detectedBooks || []);
+          setRecommendations(result.recommendations || []);
+          setStatus('completed');
+
+          // Trigger recommendations if they don't exist yet
+          if (result.status === 'completed_detection' && result.recommendations.length === 0) {
+            fetchRecommendations();
+          } else if (result.recommendations.length > 0) {
+            setRecStatus('completed');
+          }
+        } else if (result.status === 'failed') {
+          setError(result.error || 'Processing failed');
+          setStatus('failed');
+        } else {
+          setTimeout(poll, 1000);
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'Failed to get results');
+        setStatus('failed');
+      }
+    };
+    poll();
+  }, [sessionId, API_URL, fetchRecommendations]);
 
   useEffect(() => {
     if (sessionId) {
       pollResults();
-    } else {
-      setError('Invalid session ID');
-      setStatus('failed');
     }
-  }, [sessionId]);
-
-  const pollResults = async () => {
-    let attempts = 0;
-    const maxAttempts = 30; // 30 seconds with 1 second intervals
-
-    const poll = async () => {
-      try {
-        const result = await scanApi.getScanResult(sessionId);
-
-        if (result.status === 'completed') {
-          setDetectedBooks(result.detectedBooks || []);
-          setRecommendations(result.recommendations || []);
-          setStatus('completed');
-        } else if (result.status === 'failed') {
-          setError(result.error || 'Processing failed');
-          setStatus('failed');
-        } else if (attempts < maxAttempts) {
-          attempts++;
-          setTimeout(poll, 1000);
-        } else {
-          setError('Processing timeout - please try again');
-          setStatus('failed');
-        }
-      } catch (err: any) {
-        const errorMessage = err.response?.data?.error;
-        setError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage) || 'Failed to get results');
-        setStatus('failed');
-      }
-    };
-
-    poll();
-  };
+  }, [sessionId, pollResults]);
 
   if (status === 'loading') {
     return (
       <div className="results-container">
         <div className="loading-state">
           <div className="spinner"></div>
-          <h2>Analyzing your bookshelf...</h2>
-          <p>This may take a few moments</p>
+          <h2>Analysing bookshelf photos...</h2>
+          <p>This takes about 5-8 seconds on the free tier</p>
         </div>
       </div>
     );
@@ -71,11 +82,9 @@ const Results: React.FC<ResultsProps> = ({ sessionId, onBack }) => {
     return (
       <div className="results-container">
         <div className="error-state">
-          <h2>Something went wrong</h2>
+          <h2>Oops! Scan failed</h2>
           <p>{error}</p>
-          <button className="btn btn-primary" onClick={onBack}>
-            Try Again
-          </button>
+          <button className="btn btn-primary" onClick={onBack}>Try Again</button>
         </div>
       </div>
     );
@@ -85,8 +94,7 @@ const Results: React.FC<ResultsProps> = ({ sessionId, onBack }) => {
     <div className="results-container">
       <div className="results-header">
         <button className="btn-back" onClick={onBack}>← Back</button>
-        <h1>Scan Results</h1>
-        <p>Found {detectedBooks.length} books</p>
+        <h1>Found {detectedBooks.length} Books</h1>
       </div>
 
       <div className="tabs">
@@ -94,13 +102,13 @@ const Results: React.FC<ResultsProps> = ({ sessionId, onBack }) => {
           className={`tab ${activeTab === 'detected' ? 'active' : ''}`}
           onClick={() => setActiveTab('detected')}
         >
-          Detected Books ({detectedBooks.length})
+          My Shelf ({detectedBooks.length})
         </button>
         <button
           className={`tab ${activeTab === 'recommendations' ? 'active' : ''}`}
           onClick={() => setActiveTab('recommendations')}
         >
-          Recommendations ({recommendations.length})
+          Recommendations {recStatus === 'loading' ? '(...)' : `(${recommendations.length})`}
         </button>
       </div>
 
@@ -113,9 +121,16 @@ const Results: React.FC<ResultsProps> = ({ sessionId, onBack }) => {
           </div>
         ) : (
           <div className="recommendations-list">
-            {recommendations.map((rec) => (
-              <RecommendationCard key={rec.id} recommendation={rec} />
+            {recStatus === 'loading' && (
+              <div className="loading-substate">
+                <div className="spinner-small"></div>
+                <p>Generating personalized AI suggestions...</p>
+              </div>
+            )}
+            {recommendations.map((rec, idx) => (
+              <RecommendationCard key={idx} recommendation={rec} />
             ))}
+            {recStatus === 'failed' && <p>Could not generate recommendations this time.</p>}
           </div>
         )}
       </div>
@@ -123,77 +138,31 @@ const Results: React.FC<ResultsProps> = ({ sessionId, onBack }) => {
   );
 };
 
-const BookCard: React.FC<{ book: Book }> = ({ book }) => {
-  const metadata = book.metadata || {};
-  return (
-    <div className="book-card">
-      {metadata.thumbnail && (
-        <img
-          src={metadata.thumbnail}
-          alt={book.title}
-          className="book-thumbnail"
-        />
-      )}
-      <div className="book-info">
-        <h3>{book.title}</h3>
-        {book.author && <p className="author">by {book.author}</p>}
-        <div className="confidence-badge">
-          {Math.round(book.confidence_score * 100)}% confident
-        </div>
-        {metadata.categories && (
-          <div className="categories">
-            {metadata.categories.slice(0, 3).map((cat: string, idx: number) => (
-              <span key={idx} className="category-tag">{cat}</span>
-            ))}
-          </div>
-        )}
-        {metadata.averageRating && (
-          <div className="rating">
-            ⭐ {metadata.averageRating.toFixed(1)} ({metadata.ratingsCount} ratings)
-          </div>
-        )}
+const BookCard: React.FC<{ book: Book }> = ({ book }) => (
+  <div className="book-card">
+    <div className="book-info">
+      <h3>{book.title}</h3>
+      {book.author && <p className="author">by {book.author}</p>}
+      <div className="confidence-badge">{Math.round(book.confidence_score * 100)}% match</div>
+    </div>
+  </div>
+);
+
+const RecommendationCard: React.FC<{ recommendation: Recommendation }> = ({ recommendation }) => (
+  <div className="recommendation-card">
+    <div className="recommendation-header">
+      <div className="rank">#{recommendation.rank}</div>
+      <div className="score-badge">{Math.round(recommendation.recommendation_score * 100)}% match</div>
+    </div>
+    <div className="recommendation-info">
+      <h3>{recommendation.title}</h3>
+      <p className="author">by {recommendation.author}</p>
+      <div className="reasoning">
+        <strong>Why you'll like it:</strong>
+        <p>{recommendation.reasoning}</p>
       </div>
     </div>
-  );
-};
-
-const RecommendationCard: React.FC<{ recommendation: Recommendation }> = ({ recommendation }) => {
-  const metadata = recommendation.metadata || {};
-  return (
-    <div className="recommendation-card">
-      <div className="recommendation-header">
-        <div className="rank">#{recommendation.rank}</div>
-        <div className="score-badge">
-          {Math.round(recommendation.recommendation_score * 100)}% match
-        </div>
-      </div>
-
-      {metadata.thumbnail && (
-        <img
-          src={metadata.thumbnail}
-          alt={recommendation.title}
-          className="recommendation-thumbnail"
-        />
-      )}
-
-      <div className="recommendation-info">
-        <h3>{recommendation.title}</h3>
-        {recommendation.author && <p className="author">by {recommendation.author}</p>}
-
-        <div className="reasoning">
-          <strong>Why we recommend this:</strong>
-          <p>{recommendation.reasoning}</p>
-        </div>
-
-        {metadata.description && (
-          <details className="description">
-            <summary>Read more</summary>
-            <p>{metadata.description}</p>
-          </details>
-        )}
-      </div>
-    </div>
-  );
-};
+  </div>
+);
 
 export default Results;
