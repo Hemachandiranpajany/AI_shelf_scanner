@@ -1,6 +1,8 @@
+import dotenv from 'dotenv';
 if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
+  dotenv.config();
 }
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -37,8 +39,25 @@ app.use(helmet({
 }));
 
 // CORS configuration
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'http://localhost:3000',
+  'http://localhost:5173'
+].filter(Boolean) as string[];
+
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+      return callback(null, true);
+    }
+    // Also allow any *.vercel.app origin
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -64,7 +83,6 @@ app.use((req, _res, next) => {
   logger.info('Incoming request', {
     method: req.method,
     path: req.path,
-    ip: req.ip
   });
   next();
 });
@@ -76,15 +94,21 @@ app.get('/', (_req, res) => {
 
 // Health check endpoint
 app.get('/health', async (_req, res) => {
-  const dbHealth = await db.healthCheck();
-
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    database: dbHealth.healthy ? 'connected' : 'disconnected',
-    ...(dbHealth.latency && { dbLatency: `${dbHealth.latency}ms` })
-  });
+  try {
+    const dbHealth = await db.healthCheck();
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: dbHealth.healthy ? 'connected' : 'disconnected',
+      ...(dbHealth.latency && { dbLatency: `${dbHealth.latency}ms` })
+    });
+  } catch {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: 'unknown'
+    });
+  }
 });
 
 // API routes
@@ -109,7 +133,7 @@ const gracefulShutdown = async () => {
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
 
-// Start server
+// Start server (only in local dev — Vercel uses the default export)
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
   app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);

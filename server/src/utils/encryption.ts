@@ -9,9 +9,11 @@ const TAG_POSITION = SALT_LENGTH + IV_LENGTH;
 const ENCRYPTED_POSITION = TAG_POSITION + TAG_LENGTH;
 
 class EncryptionService {
-  private key: Buffer;
+  private key: Buffer | null = null;
 
-  constructor() {
+  private ensureInitialized(): void {
+    if (this.key) return;
+
     const encryptionKey = process.env.ENCRYPTION_KEY;
 
     if (!encryptionKey || encryptionKey.length < 32) {
@@ -23,11 +25,12 @@ class EncryptionService {
   }
 
   encrypt(text: string): string {
+    this.ensureInitialized();
     try {
       const iv = crypto.randomBytes(IV_LENGTH);
       const salt = crypto.randomBytes(SALT_LENGTH);
 
-      const cipher = crypto.createCipheriv(ALGORITHM, this.key, iv);
+      const cipher = crypto.createCipheriv(ALGORITHM, this.key!, iv);
 
       const encrypted = Buffer.concat([
         cipher.update(text, 'utf8'),
@@ -44,6 +47,7 @@ class EncryptionService {
   }
 
   decrypt(encryptedText: string): string {
+    this.ensureInitialized();
     try {
       const buffer = Buffer.from(encryptedText, 'base64');
 
@@ -51,7 +55,7 @@ class EncryptionService {
       const tag = buffer.subarray(TAG_POSITION, ENCRYPTED_POSITION);
       const encrypted = buffer.subarray(ENCRYPTED_POSITION);
 
-      const decipher = crypto.createDecipheriv(ALGORITHM, this.key, iv);
+      const decipher = crypto.createDecipheriv(ALGORITHM, this.key!, iv);
       decipher.setAuthTag(tag);
 
       return decipher.update(encrypted) + decipher.final('utf8');

@@ -1,10 +1,10 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { logger } from '../utils/logger';
 import { GeminiResponse } from '../types';
 
 class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
-  private model: any = null;
+  private model: GenerativeModel | null = null;
 
   constructor() {
     // Lazy initialization to prevent cold start crashes
@@ -26,15 +26,16 @@ class GeminiService {
     logger.info('Gemini AI Service initialized');
   }
 
-  private async retryOperation<T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+  private async retryOperation<T>(operation: () => Promise<T>, retries = 2, delay = 1000): Promise<T> {
     for (let i = 0; i < retries; i++) {
       try {
         return await operation();
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (i === retries - 1) throw error;
 
+        const errObj = error as { status?: number; message?: string };
         // Only retry on 503 or 429
-        if (error.status === 503 || error.status === 429 || error.message?.includes('overloaded')) {
+        if (errObj.status === 503 || errObj.status === 429 || errObj.message?.includes('overloaded')) {
           logger.warn(`Gemini API error (attempt ${i + 1}/${retries}), retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           delay *= 2; // Exponential backoff
@@ -83,22 +84,22 @@ Important guidelines:
         imagePart = {
           inlineData: {
             data: imageData.toString('base64'),
-            mimeType: 'image/jpeg'
+            mimeType: 'image/jpeg' as const
           }
         };
       } else {
         imagePart = {
           inlineData: {
             data: imageData,
-            mimeType: 'image/jpeg'
+            mimeType: 'image/jpeg' as const
           }
         };
       }
 
-      const result = (await this.retryOperation(() =>
-        this.model.generateContent([prompt, imagePart])
-      )) as any;
-      const response = await result.response;
+      const result = await this.retryOperation(() =>
+        this.model!.generateContent([prompt, imagePart])
+      );
+      const response = result.response;
       const text = response.text();
 
       logger.debug('Gemini raw response', { text: text.substring(0, 200) });
@@ -117,11 +118,11 @@ Important guidelines:
       logger.info('Books detected by Gemini', { count: parsed.books.length });
 
       return parsed;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errObj = error as { message?: string; status?: number };
       logger.error('Gemini API final error', {
-        message: error.message,
-        status: error.status,
-        stack: error.stack
+        message: errObj.message,
+        status: errObj.status,
       });
       throw new Error('Failed to process image with Gemini after retries');
     }
@@ -129,8 +130,8 @@ Important guidelines:
 
   async generateRecommendationsBatch(
     books: Array<{ title: string; author?: string }>,
-    userPreferences: any,
-    readingHistory: any[]
+    userPreferences: unknown,
+    readingHistory: Array<{ book_title: string; book_author?: string; rating?: number }>
   ): Promise<Array<{ title: string; author: string; score: number; reasoning: string }>> {
     this.ensureInitialized();
     try {
@@ -166,10 +167,10 @@ Return ONLY a valid JSON object with this structure:
 }
 Provide exactly 5 high-quality recommendations.`;
 
-      const result = (await this.retryOperation(() =>
-        this.model.generateContent(prompt)
-      )) as any;
-      const response = await result.response;
+      const result = await this.retryOperation(() =>
+        this.model!.generateContent(prompt)
+      );
+      const response = result.response;
       const text = response.text();
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -183,17 +184,17 @@ Provide exactly 5 high-quality recommendations.`;
         throw new Error('Invalid batch recommendation response structure');
       }
 
-      return parsed.recommendations.map((r: any) => ({
+      return parsed.recommendations.map((r: { title?: string; author?: string; score?: number; reasoning?: string }) => ({
         title: r.title || 'Unknown Title',
         author: r.author || 'Unknown Author',
         score: Math.max(0, Math.min(1, typeof r.score === 'number' ? r.score : 0.5)),
         reasoning: r.reasoning || 'No specific reasoning provided'
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errObj = error as { message?: string; status?: number };
       logger.error('Failed to generate batch recommendations', {
-        message: error.message,
-        status: error.status,
-        stack: error.stack
+        message: errObj.message,
+        status: errObj.status,
       });
       return books.map(() => ({
         title: 'Unknown Title',
@@ -206,8 +207,8 @@ Provide exactly 5 high-quality recommendations.`;
 
   async generateRecommendation(
     detectedBook: { title: string; author?: string },
-    userPreferences: any,
-    readingHistory: any[]
+    userPreferences: unknown,
+    readingHistory: Array<{ book_title: string; book_author?: string; rating?: number }>
   ): Promise<{ title: string; author: string; score: number; reasoning: string }> {
     const results = await this.generateRecommendationsBatch([detectedBook], userPreferences, readingHistory);
     return results[0];

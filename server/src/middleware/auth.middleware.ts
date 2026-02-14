@@ -5,7 +5,7 @@ import { AuthRequest } from '../types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authMiddleware = (req: AuthRequest, _res: Response, next: NextFunction) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
 
@@ -16,10 +16,10 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
 
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     req.userId = decoded.userId;
-    
+
     next();
   } catch (error) {
-    logger.error('Auth middleware error', error);
+    logger.error('Auth middleware error', { error });
     // Continue without authentication for graceful degradation
     next();
   }
@@ -27,7 +27,8 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
 
 export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
   if (!req.userId) {
-    return res.status(401).json({ error: 'Authentication required' });
+    res.status(401).json({ error: 'Authentication required' });
+    return;
   }
   next();
 };

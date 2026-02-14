@@ -6,11 +6,10 @@ export const errorHandler = (
   err: ApiError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   logger.error('Error handler caught error', {
     message: err.message,
-    stack: err.stack,
     path: req.path,
     method: req.method
   });

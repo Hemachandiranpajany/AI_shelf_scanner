@@ -33,8 +33,9 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
     return res.json(result.rows);
 
-  } catch (error) {
-    logger.error('Failed to get scan history', error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Failed to get scan history', { error: errMsg });
     return res.status(500).json({ error: 'Failed to retrieve scan history' });
   }
 });
@@ -63,9 +64,11 @@ router.get('/:sessionId', async (req: AuthRequest, res: Response) => {
 
     // Get recommendations
     const recommendationsResult = await db.query(
-      `SELECT r.*, db.title, db.author, db.metadata
+      `SELECT r.*,
+              COALESCE(r.title, db.title) as title,
+              COALESCE(r.author, db.author) as author
        FROM recommendations r
-       JOIN detected_books db ON r.detected_book_id = db.id
+       LEFT JOIN detected_books db ON r.detected_book_id = db.id
        WHERE r.scan_session_id = $1
        ORDER BY r.rank ASC`,
       [sessionId]
@@ -77,8 +80,9 @@ router.get('/:sessionId', async (req: AuthRequest, res: Response) => {
       recommendations: recommendationsResult.rows
     });
 
-  } catch (error) {
-    logger.error('Failed to get session details', error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Failed to get session details', { error: errMsg });
     return res.status(500).json({ error: 'Failed to retrieve session details' });
   }
 });
@@ -104,8 +108,9 @@ router.delete('/:sessionId', async (req: AuthRequest, res: Response) => {
 
     return res.json({ message: 'Session deleted successfully' });
 
-  } catch (error) {
-    logger.error('Failed to delete session', error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Failed to delete session', { error: errMsg });
     return res.status(500).json({ error: 'Failed to delete session' });
   }
 });

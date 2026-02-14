@@ -25,8 +25,9 @@ router.get('/profile', async (req: AuthRequest, res: Response) => {
 
     return res.json(result.rows[0]);
 
-  } catch (error) {
-    logger.error('Failed to get user profile', error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Failed to get user profile', { error: errMsg });
     return res.status(500).json({ error: 'Failed to retrieve profile' });
   }
 });
@@ -48,8 +49,9 @@ router.put('/profile', async (req: AuthRequest, res: Response) => {
 
     return res.json(result.rows[0]);
 
-  } catch (error) {
-    logger.error('Failed to update profile', error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Failed to update profile', { error: errMsg });
     return res.status(500).json({ error: 'Failed to update profile' });
   }
 });
@@ -71,8 +73,9 @@ router.put('/preferences', async (req: AuthRequest, res: Response) => {
 
     return res.json(result.rows[0]);
 
-  } catch (error) {
-    logger.error('Failed to update preferences', error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Failed to update preferences', { error: errMsg });
     return res.status(500).json({ error: 'Failed to update preferences' });
   }
 });
@@ -98,8 +101,9 @@ router.post('/reading-history', async (req: AuthRequest, res: Response) => {
 
     return res.json(result.rows[0]);
 
-  } catch (error) {
-    logger.error('Failed to add reading history', error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Failed to add reading history', { error: errMsg });
     return res.status(500).json({ error: 'Failed to add to reading history' });
   }
 });
@@ -120,8 +124,9 @@ router.get('/reading-history', async (req: AuthRequest, res: Response) => {
 
     return res.json(result.rows);
 
-  } catch (error) {
-    logger.error('Failed to get reading history', error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Failed to get reading history', { error: errMsg });
     return res.status(500).json({ error: 'Failed to retrieve reading history' });
   }
 });
@@ -140,8 +145,9 @@ router.delete('/data', async (req: AuthRequest, res: Response) => {
 
     return res.json({ message: 'All user data deleted successfully' });
 
-  } catch (error) {
-    logger.error('Failed to delete user data', error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Failed to delete user data', { error: errMsg });
     return res.status(500).json({ error: 'Failed to delete user data' });
   }
 });

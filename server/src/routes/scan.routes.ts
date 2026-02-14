@@ -13,7 +13,7 @@ const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760') // 10MB default
+    fileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880') // 5MB default (reduced for free tier speed)
   },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -24,7 +24,7 @@ const upload = multer({
   }
 });
 
-// POST /api/scan - Process bookshelf image
+// POST /api/scan - Process bookshelf image (optimized for 10s Vercel free tier)
 router.post('/', upload.single('image'), async (req: Request, res: Response) => {
   try {
     const file = req.file;
@@ -46,19 +46,25 @@ router.post('/', upload.single('image'), async (req: Request, res: Response) => 
 
     const sessionId = sessionResult.rows[0].id;
 
-    // Await the processing to ensure it completes before the Lambda shuts down
-    // Vercel free tier limits are 10s, but awaiting gives it the best chance.
-    await processImage(sessionId, file.buffer, userId).catch(err => {
-      logger.error('Background processing error', err);
-    });
+    // Process synchronously — Vercel serverless requires we finish before response
+    // The entire pipeline must complete within ~9 seconds
+    try {
+      await processImage(sessionId, file.buffer, userId);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Processing error';
+      logger.error('Image processing error', { sessionId, error: errMsg });
+      // Session is already marked failed inside processImage
+    }
 
+    // Return the sessionId — client will poll for results
     return res.json({
-      message: 'Scan started',
       sessionId,
       status: 'processing'
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Upload handler error', { error: errMsg });
     return res.status(500).json({ error: 'Failed to process upload' });
   }
 });
@@ -124,7 +130,9 @@ router.get('/:sessionId', async (req: Request, res: Response) => {
       createdAt: session.created_at
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Get scan results error', { error: errMsg });
     return res.status(500).json({ error: 'Failed to retrieve scan results' });
   }
 });
@@ -145,18 +153,19 @@ router.post('/:sessionId/feedback', async (req: Request, res: Response) => {
 
     return res.json({ message: 'Feedback submitted successfully' });
 
-  } catch (error) {
-    logger.error('Failed to submit feedback', error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Failed to submit feedback', { error: errMsg });
     return res.status(500).json({ error: 'Failed to submit feedback' });
   }
 });
 
-// Async image processing function
+// Optimized image processing for 10-second budget
 async function processImage(sessionId: string, imageBuffer: Buffer, userId?: string) {
   try {
     logger.info('Starting image processing', { sessionId });
 
-    // Step 1: Detect books using Gemini
+    // Step 1: Detect books using Gemini (typically 2-4 seconds)
     const geminiResult = await geminiService.detectBooksFromImage(imageBuffer);
 
     if (!geminiResult.books || geminiResult.books.length === 0) {
@@ -167,18 +176,10 @@ async function processImage(sessionId: string, imageBuffer: Buffer, userId?: str
       return;
     }
 
-    // Step 2: Enrich book data with Google Books API
-    const enrichedBooks = await googleBooksService.enrichBookData(
-      geminiResult.books.map(b => ({ title: b.title, author: b.author }))
-    );
-
-    // Step 3: Save detected books
+    // Step 2: Save detected books FIRST (fast, ensures data is persisted)
     const detectedBookIds: string[] = [];
 
-    for (let i = 0; i < geminiResult.books.length; i++) {
-      const book = geminiResult.books[i];
-      const metadata = enrichedBooks[i] || {};
-
+    for (const book of geminiResult.books) {
       const result = await db.query(
         `INSERT INTO detected_books 
          (scan_session_id, title, author, confidence_score, metadata, position_in_image)
@@ -189,42 +190,66 @@ async function processImage(sessionId: string, imageBuffer: Buffer, userId?: str
           book.title,
           book.author || null,
           book.confidence,
-          JSON.stringify(metadata),
-          JSON.stringify(book.position)
+          '{}',  // Skip enrichment on insert, do it in parallel
+          JSON.stringify(book.position || {})
         ]
       );
-
       detectedBookIds.push(result.rows[0].id);
     }
 
-    // Step 4: Generate recommendations (Batch)
-    const userPrefsResult = userId ? await db.query(
-      `SELECT preferences FROM users WHERE id = $1`,
-      [userId]
-    ) : { rows: [] };
-
-    const readingHistoryResult = userId ? await db.query(
-      `SELECT * FROM reading_history WHERE user_id = $1 ORDER BY added_at DESC LIMIT 10`,
-      [userId]
-    ) : { rows: [] };
-
-    const userPreferences = userPrefsResult.rows?.[0]?.preferences || {};
-    const readingHistory = readingHistoryResult.rows || [];
-
+    // Step 3: Run enrichment + recommendations in parallel to save time
     const booksToRecommend = geminiResult.books.slice(0, 5);
-    logger.info(`Generating batch recommendations for ${booksToRecommend.length} books`, { sessionId, userId });
 
-    try {
-      const recommendations = await geminiService.generateRecommendationsBatch(
+    // Get user preferences (if user is logged in)
+    let userPreferences = {};
+    let readingHistory: unknown[] = [];
+    if (userId) {
+      const [prefsResult, historyResult] = await Promise.all([
+        db.query(`SELECT preferences FROM users WHERE id = $1`, [userId]),
+        db.query(`SELECT * FROM reading_history WHERE user_id = $1 ORDER BY added_at DESC LIMIT 10`, [userId])
+      ]);
+      userPreferences = prefsResult.rows?.[0]?.preferences || {};
+      readingHistory = historyResult.rows || [];
+    }
+
+    // Run book enrichment and recommendation generation in parallel
+    const [enrichedBooks, recommendations] = await Promise.all([
+      googleBooksService.enrichBookData(
+        geminiResult.books.map(b => ({ title: b.title, author: b.author }))
+      ).catch(() => geminiResult.books.map(() => null)),
+
+      geminiService.generateRecommendationsBatch(
         booksToRecommend,
         userPreferences,
-        readingHistory
-      );
+        readingHistory as Array<{ book_title: string; book_author?: string; rating?: number }>
+      ).catch(() => [])
+    ]);
 
-      // Enrich recommendations with Google Books metadata
-      const enrichedRecs = await googleBooksService.enrichBookData(
-        recommendations.map(r => ({ title: r.title, author: r.author }))
-      );
+    // Step 4: Update detected books with enrichment data (batch update)
+    for (let i = 0; i < detectedBookIds.length; i++) {
+      const metadata = enrichedBooks[i];
+      if (metadata) {
+        await db.query(
+          `UPDATE detected_books SET metadata = $1 WHERE id = $2`,
+          [JSON.stringify(metadata), detectedBookIds[i]]
+        );
+      }
+    }
+
+    // Step 5: Save recommendations (skip enrichment for speed — do metadata inline)
+    if (recommendations.length > 0) {
+      // Quick enrichment for recommendations (parallel, with 3s timeout)
+      let enrichedRecs: Array<unknown>;
+      try {
+        enrichedRecs = await Promise.race([
+          googleBooksService.enrichBookData(
+            recommendations.map(r => ({ title: r.title, author: r.author }))
+          ),
+          new Promise<Array<null>>((resolve) => setTimeout(() => resolve(recommendations.map(() => null)), 3000))
+        ]);
+      } catch {
+        enrichedRecs = recommendations.map(() => null);
+      }
 
       for (let i = 0; i < recommendations.length; i++) {
         const rec = recommendations[i];
@@ -237,30 +262,24 @@ async function processImage(sessionId: string, imageBuffer: Buffer, userId?: str
           [sessionId, null, userId || null, rec.title, rec.author, rec.score, rec.reasoning, i + 1, JSON.stringify(metadata)]
         );
       }
-      logger.info('Batch recommendations completed with enrichment', { sessionId });
-    } catch (batchError: any) {
-      logger.error('Failed to generate or enrich batch recommendations', { sessionId, error: batchError.message });
     }
 
-    // Step 5: Update session status
+    // Step 6: Mark session as completed
     await db.query(
       `UPDATE scan_sessions SET status = $1 WHERE id = $2`,
       ['completed', sessionId]
     );
 
-    logger.info('Image processing completed successfully', { sessionId, booksDetected: geminiResult.books.length });
+    logger.info('Image processing completed', { sessionId, booksDetected: geminiResult.books.length });
 
-  } catch (error: any) {
-    logger.error('Critical image processing error', {
-      sessionId,
-      message: error.message,
-      stack: error.stack
-    });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Internal processing error';
+    logger.error('Critical image processing error', { sessionId, error: errMsg });
 
     await db.query(
       `UPDATE scan_sessions SET status = $1, error_message = $2 WHERE id = $3`,
-      ['failed', error.message || 'Internal processing error', sessionId]
-    );
+      ['failed', errMsg, sessionId]
+    ).catch(() => { /* best effort */ });
   }
 }
 
