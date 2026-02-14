@@ -19,11 +19,15 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "server/src/index.ts"
+      "dest": "/server/src/index.ts"
     },
     {
       "src": "/health",
-      "dest": "server/src/index.ts"
+      "dest": "/server/src/index.ts"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
     },
     {
       "handle": "filesystem"
