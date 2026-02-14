@@ -98,6 +98,7 @@ app.get('/health', async (_req, res) => {
     const dbHealth = await db.healthCheck();
     res.json({
       status: 'ok',
+      version: '1.2.0-phased-optimized',
       timestamp: new Date().toISOString(),
       database: dbHealth.healthy ? 'connected' : 'disconnected',
       ...(dbHealth.latency && { dbLatency: `${dbHealth.latency}ms` })
