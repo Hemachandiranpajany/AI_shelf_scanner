@@ -23,33 +23,11 @@ const consoleFormat = winston.format.combine(
 
 export const logger = winston.createLogger({
   level: logLevel,
-  format: customFormat,
+  format: process.env.NODE_ENV === 'production' ? customFormat : consoleFormat,
   defaultMeta: { service: 'shelf-scanner' },
   transports: [
-    new winston.transports.Console({
-      format: process.env.NODE_ENV === 'production' ? customFormat : consoleFormat,
-    }),
+    new winston.transports.Console(),
   ],
 });
-
-// Add file transport in production only if NOT on Vercel
-if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
-  logger.add(
-    new winston.transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    })
-  );
-
-  logger.add(
-    new winston.transports.File({
-      filename: 'logs/combined.log',
-      maxsize: 5242880,
-      maxFiles: 5,
-    })
-  );
-}
 
 export default logger;
