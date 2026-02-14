@@ -116,7 +116,7 @@ router.get('/:sessionId', async (req: Request, res: Response) => {
       [sessionId]
     );
 
-    res.json({
+    return res.json({
       sessionId,
       status: 'completed',
       detectedBooks: booksResult.rows,
@@ -143,11 +143,11 @@ router.post('/:sessionId/feedback', async (req: Request, res: Response) => {
       [sessionId, detectedBookId || null, userId || null, feedbackType, isCorrect, correctedTitle, correctedAuthor, comments]
     );
 
-    res.json({ message: 'Feedback submitted successfully' });
+    return res.json({ message: 'Feedback submitted successfully' });
 
   } catch (error) {
     logger.error('Failed to submit feedback', error);
-    res.status(500).json({ error: 'Failed to submit feedback' });
+    return res.status(500).json({ error: 'Failed to submit feedback' });
   }
 });
 

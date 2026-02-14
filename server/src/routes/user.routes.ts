@@ -23,11 +23,11 @@ router.get('/profile', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(result.rows[0]);
+    return res.json(result.rows[0]);
 
   } catch (error) {
     logger.error('Failed to get user profile', error);
-    res.status(500).json({ error: 'Failed to retrieve profile' });
+    return res.status(500).json({ error: 'Failed to retrieve profile' });
   }
 });
 
@@ -46,11 +46,11 @@ router.put('/profile', async (req: AuthRequest, res: Response) => {
       [username, email, userId]
     );
 
-    res.json(result.rows[0]);
+    return res.json(result.rows[0]);
 
   } catch (error) {
     logger.error('Failed to update profile', error);
-    res.status(500).json({ error: 'Failed to update profile' });
+    return res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 
@@ -69,11 +69,11 @@ router.put('/preferences', async (req: AuthRequest, res: Response) => {
       [JSON.stringify(preferences), userId]
     );
 
-    res.json(result.rows[0]);
+    return res.json(result.rows[0]);
 
   } catch (error) {
     logger.error('Failed to update preferences', error);
-    res.status(500).json({ error: 'Failed to update preferences' });
+    return res.status(500).json({ error: 'Failed to update preferences' });
   }
 });
 
@@ -96,11 +96,11 @@ router.post('/reading-history', async (req: AuthRequest, res: Response) => {
       [userId, bookTitle, bookAuthor, bookIsbn, rating, status]
     );
 
-    res.json(result.rows[0]);
+    return res.json(result.rows[0]);
 
   } catch (error) {
     logger.error('Failed to add reading history', error);
-    res.status(500).json({ error: 'Failed to add to reading history' });
+    return res.status(500).json({ error: 'Failed to add to reading history' });
   }
 });
 
@@ -118,11 +118,11 @@ router.get('/reading-history', async (req: AuthRequest, res: Response) => {
       [userId]
     );
 
-    res.json(result.rows);
+    return res.json(result.rows);
 
   } catch (error) {
     logger.error('Failed to get reading history', error);
-    res.status(500).json({ error: 'Failed to retrieve reading history' });
+    return res.status(500).json({ error: 'Failed to retrieve reading history' });
   }
 });
 
@@ -138,11 +138,11 @@ router.delete('/data', async (req: AuthRequest, res: Response) => {
     // Delete user (cascade will handle related data)
     await db.query(`DELETE FROM users WHERE id = $1`, [userId]);
 
-    res.json({ message: 'All user data deleted successfully' });
+    return res.json({ message: 'All user data deleted successfully' });
 
   } catch (error) {
     logger.error('Failed to delete user data', error);
-    res.status(500).json({ error: 'Failed to delete user data' });
+    return res.status(500).json({ error: 'Failed to delete user data' });
   }
 });
 

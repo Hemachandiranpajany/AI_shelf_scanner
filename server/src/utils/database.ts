@@ -3,7 +3,6 @@ import { logger } from './logger';
 
 class Database {
   private pool: Pool | null = null;
-  private isConnected: boolean = false;
 
   constructor() {
     // Lazy initialization
@@ -26,11 +25,9 @@ class Database {
 
       this.pool.on('error', (err) => {
         logger.error('Unexpected database error', err);
-        this.isConnected = false;
       });
 
       this.pool.on('connect', () => {
-        this.isConnected = true;
         logger.info('Database connection established');
       });
 
@@ -80,7 +77,6 @@ class Database {
     if (this.pool) {
       await this.pool.end();
       this.pool = null;
-      this.isConnected = false;
     }
   }
 

@@ -13,7 +13,7 @@ class EncryptionService {
 
   constructor() {
     const encryptionKey = process.env.ENCRYPTION_KEY;
-    
+
     if (!encryptionKey || encryptionKey.length < 32) {
       throw new Error('ENCRYPTION_KEY must be at least 32 characters long');
     }
@@ -47,7 +47,6 @@ class EncryptionService {
     try {
       const buffer = Buffer.from(encryptedText, 'base64');
 
-      const salt = buffer.subarray(0, SALT_LENGTH);
       const iv = buffer.subarray(SALT_LENGTH, TAG_POSITION);
       const tag = buffer.subarray(TAG_POSITION, ENCRYPTED_POSITION);
       const encrypted = buffer.subarray(ENCRYPTED_POSITION);

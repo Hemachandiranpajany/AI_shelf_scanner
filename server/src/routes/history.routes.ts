@@ -31,11 +31,11 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       [userId, limit, offset]
     );
 
-    res.json(result.rows);
+    return res.json(result.rows);
 
   } catch (error) {
     logger.error('Failed to get scan history', error);
-    res.status(500).json({ error: 'Failed to retrieve scan history' });
+    return res.status(500).json({ error: 'Failed to retrieve scan history' });
   }
 });
 
@@ -71,7 +71,7 @@ router.get('/:sessionId', async (req: AuthRequest, res: Response) => {
       [sessionId]
     );
 
-    res.json({
+    return res.json({
       session: sessionResult.rows[0],
       detectedBooks: booksResult.rows,
       recommendations: recommendationsResult.rows
@@ -79,7 +79,7 @@ router.get('/:sessionId', async (req: AuthRequest, res: Response) => {
 
   } catch (error) {
     logger.error('Failed to get session details', error);
-    res.status(500).json({ error: 'Failed to retrieve session details' });
+    return res.status(500).json({ error: 'Failed to retrieve session details' });
   }
 });
 
@@ -102,11 +102,11 @@ router.delete('/:sessionId', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    res.json({ message: 'Session deleted successfully' });
+    return res.json({ message: 'Session deleted successfully' });
 
   } catch (error) {
     logger.error('Failed to delete session', error);
-    res.status(500).json({ error: 'Failed to delete session' });
+    return res.status(500).json({ error: 'Failed to delete session' });
   }
 });
 
