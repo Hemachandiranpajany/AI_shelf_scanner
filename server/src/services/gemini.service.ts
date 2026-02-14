@@ -13,7 +13,7 @@ class GeminiService {
 
     this.genAI = new GoogleGenerativeAI(apiKey);
     // Use flash-8b for maximum speed in serverless environments
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash-8b' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
   async detectBooksFromImage(imageData: Buffer | string): Promise<GeminiResponse> {
