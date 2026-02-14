@@ -6,11 +6,14 @@ class Database {
   private isConnected: boolean = false;
 
   constructor() {
-    this.initialize();
+    // Lazy initialization
   }
 
-  private initialize(): void {
+  private async ensureInitialized(): Promise<void> {
+    if (this.pool) return;
+
     try {
+      logger.info('Initializing database pool...');
       this.pool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: process.env.NODE_ENV === 'production' ? {
@@ -31,39 +34,21 @@ class Database {
         logger.info('Database connection established');
       });
 
-      // Test connection
-      this.testConnection();
+      await this.testConnection();
     } catch (error) {
       logger.error('Failed to initialize database pool', error);
       throw error;
     }
   }
 
-  private async testConnection(): Promise<void> {
+  async query<T extends QueryResult = QueryResult>(text: string, params?: any[]): Promise<T> {
+    await this.ensureInitialized();
+    const start = Date.now();
     try {
-      const client = await this.pool!.connect();
-      await client.query('SELECT NOW()');
-      client.release();
-      this.isConnected = true;
-      logger.info('Database connection test successful');
-    } catch (error) {
-      logger.error('Database connection test failed', error);
-      this.isConnected = false;
-    }
-  }
-
-  async query<T = any>(text: string, params?: any[]): Promise<QueryResult<T>> {
-    if (!this.pool) {
-      throw new Error('Database pool not initialized');
-    }
-
-    try {
-      const start = Date.now();
-      const result = await this.pool.query<T>(text, params);
+      const res = await this.pool!.query(text, params);
       const duration = Date.now() - start;
-      
-      logger.debug('Executed query', { text, duration, rows: result.rowCount });
-      return result;
+      logger.debug('Executed query', { text, duration, rows: res.rowCount });
+      return res as T;
     } catch (error) {
       logger.error('Database query error', { text, error });
       throw error;
@@ -71,15 +56,13 @@ class Database {
   }
 
   async getClient(): Promise<PoolClient> {
-    if (!this.pool) {
-      throw new Error('Database pool not initialized');
-    }
-    return this.pool.connect();
+    await this.ensureInitialized();
+    return await this.pool!.connect();
   }
 
   async transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+    await this.ensureInitialized();
     const client = await this.getClient();
-    
     try {
       await client.query('BEGIN');
       const result = await callback(client);
@@ -96,13 +79,19 @@ class Database {
   async close(): Promise<void> {
     if (this.pool) {
       await this.pool.end();
+      this.pool = null;
       this.isConnected = false;
-      logger.info('Database pool closed');
     }
   }
 
-  isHealthy(): boolean {
-    return this.isConnected && this.pool !== null;
+  async testConnection(): Promise<boolean> {
+    try {
+      const res = await this.pool!.query('SELECT NOW()');
+      return !!res.rows[0];
+    } catch (error) {
+      logger.error('Database connection test failed', error);
+      return false;
+    }
   }
 
   async healthCheck(): Promise<{ healthy: boolean; latency?: number }> {
@@ -110,13 +99,14 @@ class Database {
       return { healthy: false };
     }
 
+    const start = Date.now();
     try {
-      const start = Date.now();
-      await this.query('SELECT 1');
-      const latency = Date.now() - start;
-      return { healthy: true, latency };
+      await this.pool.query('SELECT 1');
+      return {
+        healthy: true,
+        latency: Date.now() - start
+      };
     } catch (error) {
-      logger.error('Health check failed', error);
       return { healthy: false };
     }
   }
