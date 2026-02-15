@@ -118,7 +118,9 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
           </div>
         ) : (
           <div className="preview-area">
-            <img src={preview} alt="Preview" className="preview-image" />
+            <div className="preview-image-container">
+              <img src={preview} alt="Preview" className="preview-image" />
+            </div>
             <div className="preview-actions">
               <button
                 className="btn btn-secondary"
@@ -126,6 +128,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
                   setSelectedFile(null);
                   setPreview(null);
                 }}
+                disabled={isUploading}
               >
                 Retake
               </button>
@@ -135,7 +138,12 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
                 onClick={handleUpload}
                 disabled={isUploading}
               >
-                {isUploading ? 'Analysing...' : 'Find Books'}
+                {isUploading ? (
+                  <>
+                    <span className="spinner-small" style={{ marginRight: '10px' }}></span>
+                    Analysing...
+                  </>
+                ) : 'Find Books'}
               </button>
             </div>
           </div>
