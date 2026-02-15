@@ -83,11 +83,11 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
   return (
     <div className="scanner-container">
       <div className="scanner-card">
-        <h2>Start Your Scan</h2>
-        <p className="description">Capture your bookshelf to get AI recommendations instantly.</p>
-
         {!preview ? (
           <div className="upload-area">
+            <div className="upload-icon">📸</div>
+            <p className="description">Capture your bookshelf to get AI recommendations instantly.</p>
+
             <input
               ref={fileInputRef}
               type="file"
@@ -101,13 +101,13 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
               className="btn btn-primary btn-large"
               onClick={() => fileInputRef.current?.click()}
             >
-              📷 Take Photo
+              Take Photo
             </button>
 
             <div className="divider">or</div>
 
             <label className="btn btn-secondary" style={{ cursor: 'pointer' }}>
-              📁 Choose from Gallery
+              Choose from Gallery
               <input
                 type="file"
                 accept="image/*"
@@ -144,7 +144,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScanComplete }) => {
         {error && <div className="error-message">{error}</div>}
 
         <div className="tips">
-          <p>💡 Tip: Make sure the book titles are readable for better accuracy.</p>
+          💡 Tip: For best results, ensure book titles are clearly visible and well-lit.
         </div>
       </div>
     </div>
