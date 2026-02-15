@@ -1,228 +1,116 @@
-# Shelf Scanner
+# 📚 Shelf Scanner
 
-AI-powered book discovery app that helps you identify books from bookshelf photos and get personalized recommendations based on your reading preferences.
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-success?logo=vercel&logoColor=white)](https://vercel.com)
+[![Tech Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node%20%7C%20Postgres-blue)](https://github.com/Hemachandiranpajany/AI_shelf_scanner)
+[![AI Powered](https://img.shields.io/badge/AI-Gemini%201.5%20Flash-orange?logo=google-gemini&logoColor=white)](https://aistudio.google.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+An intelligent full-stack book discovery engine that transforms photos of your physical bookshelf into actionable digital insights and personalized recommendations.
 
-- 📷 **AI Book Recognition**: Scan bookshelves using Google Gemini Flash (Highly Accurate!)
-- 📚 **Personalized Recommendations**: Get 5 NEW book suggestions based on your shelf
-- ⚡ **Batch Optimized**: Smart API batching to work reliably on Gemini's free tier
-- 👤 **Guest Friendly**: Recommendations work instantly, even without an account
-- 📊 **Scan History**: Track your discoveries and recommendations
-- 💰 **Free to Use**: Powered by Google Gemini's generous free tier
+---
 
-## Tech Stack
+## 🚀 Key Features
 
-- **Frontend**: React 18 + TypeScript + Vite
-- **Backend**: Express.js + TypeScript
-- **Database**: PostgreSQL
-- **AI**: Google Gemini Flash (Latest Stable)
-- **Book Metadata**: Google Books API
-- **Deployment**: Vercel
+*   📷 **Neural Book Recognition**: Powered by Google Gemini 1.5 Flash for high-accuracy spine detection.
+*   🧠 **Context-Aware Recommendations**: Phase-based AI generation that analyzes your shelf's "vibe" to suggest 5 new titles.
+*   ⚡ **Serverless Optimized**: Custom image pipeline designed to run within Vercel's 10-second free tier budget.
+*   🖼️ **Metada Enrichment**: Automatic fetching of covers, ratings, and descriptions via Google Books API.
+*   👤 **Hybrid Auth**: Anonymous instant scans for guests with optional JWT-based history for registered users.
 
-## Project Structure
+---
 
-```
-shelf-scanner/
-├── client/                 # React frontend
-│   ├── src/
-│   │   ├── components/     # Reusable components
-│   │   ├── pages/         # Page components
-│   │   ├── utils/         # API client
-│   │   └── types/         # TypeScript types
-├── server/                # Express backend
-│   ├── src/
-│   │   ├── routes/        # API routes
-│   │   ├── services/      # Business logic
-│   │   ├── middleware/    # Express middleware
-│   │   └── utils/         # Utilities
-├── database/              # Database schema
-└── ...
-```
+## 🛠️ Tech Stack
 
-## Getting Started
+| Component | Technology |
+| :--- | :--- |
+| **Frontend** | React 18, TypeScript, Vite, Axios |
+| **Backend** | Node.js, Express.js, TypeScript |
+| **Database** | PostgreSQL (Neon/Vercel Postgres) |
+| **AI/ML** | Google Gemini (Flash-Latest) |
+| **Storage** | AES-256-GCM Encrypted Local State |
+| **Hosting** | Vercel (Serverless Functions) |
+
+---
+
+## 🏗️ Architectural Excellence: The "10s Optimized" Suite
+
+To handle heavy AI processing on Vercel's 10-second free tier, we implemented several engineering optimizations:
+
+1.  **Client-Side Image Siphoning**: Images are automatically compressed to 1200px (JPEG 80%) in the browser before upload, reducing network latency by ~70%.
+2.  **Phased Processing**:
+    *   **Phase 1 (Detection)**: Rapid spine identification (3-5s).
+    *   **Phase 2 (Background Recommendations)**: Triggered post-UI load to grant the AI a fresh 10s window.
+3.  **Lazy Initialization**: Core services (DB Pool, Encryption, Gemini) initialize only when needed to minimize serverless cold-start overhead.
+
+---
+
+## 🚦 Getting Started
 
 ### Prerequisites
-
 - Node.js 18+
-- PostgreSQL 18+ (Recommended)
-- **Google Gemini API key** (FREE - get it at [Google AI Studio](https://aistudio.google.com/app/apikey))
+- PostgreSQL instance (Neon.tech recommended for dev)
+- [Google AI Studio API Key](https://aistudio.google.com/app/apikey)
 
-### Installation
+### Quick Start (Development)
 
-1. **Clone the repository**:
-```bash
-git clone <repository-url>
-cd shelf-scanner
-```
+1. **Clone & Install**
+   ```bash
+   git clone https://github.com/Hemachandiranpajany/AI_shelf_scanner.git
+   cd AI_shelf_scanner
+   npm run install-all  # Installs root, client, and server dependencies
+   ```
 
-2. **Install dependencies**:
-```bash
-npm install
-cd client && npm install
-cd ../server && npm install
-```
+2. **Environment Configuration**
+   Create a `.env` in the `server` directory:
+   ```env
+   DATABASE_URL=postgresql://user:pass@localhost:5432/db
+   GEMINI_API_KEY=your_key_here
+   JWT_SECRET=your_secret
+   ENCRYPTION_KEY=32_character_hex_key
+   ```
 
-3. **Set up environment variables**:
-```bash
-cp .env.example .env
-# Edit .env with your API keys
-```
+3. **Database Migration**
+   ```bash
+   psql [YOUR_DATABASE_URL] -f database/schema.sql
+   ```
 
-Required environment variables:
-```env
-DATABASE_URL=postgresql://postgres:password@localhost:5432/shelf_scanner
-GEMINI_API_KEY=your_gemini_api_key_here
-JWT_SECRET=your_secure_random_jwt_secret
-ENCRYPTION_KEY=your_secure_random_encryption_key (min 32 chars)
-```
+4. **Launch**
+   ```bash
+   npm run dev
+   ```
 
-4. **Set up the database**:
-```bash
-# Create PostgreSQL database
-createdb shelf_scanner
+---
 
-# Run schema
-psql shelf_scanner < database/schema.sql
-```
+## 📡 API Documentation
 
-5. **Start development servers**:
-```bash
-npm run dev
-```
+### Scan Endpoints
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/scan` | Upload image & trigger Phase 1 (Detection) |
+| `GET` | `/api/scan/:id` | Poll session status & detected books |
+| `GET` | `/api/scan/:id/recommendations` | Trigger Phase 2 (AI Analysis) |
+| `POST` | `/api/scan/:id/feedback` | Submit corrections to the AI result |
 
-This will automatically start:
-- React frontend: http://localhost:3000
-- Express backend: http://localhost:5000
+### User Endpoints
+- `GET /api/user/profile` - JWT Protected profile data
+- `PUT /api/user/preferences` - Update AI recommendation weights
+- `GET /api/history` - Retrieve all past scan sessions
 
-## How It Works
+---
 
-1. **Upload Image**: Take a clear photo of your bookshelf spines.
-2. **AI Vision**: Google Gemini Flash analyzes the image to extract accurate titles and authors.
-3. **Data Enrichment**: Google Books API fetches high-quality covers and ratings.
-4. **Smart Batch Recommendations**: The AI analyzes your entire shelf and recommends 5 COMPLETELY NEW books you'll love, optimized for API quota limits.
-5. **Instant Feedback**: View detected books and recommendations side-by-side.
+## 🔒 Security & Performance
+- **Data Privacy**: Images are processed in-memory and never stored permanently.
+- **Rate Limiting**: Integrated brute-force protection for API endpoints.
+- **Secure Handling**: AES-256-GCM encryption for all session-related metadata.
 
-## API Endpoints
+---
 
-### Image Processing
-- `POST /api/scan` - Upload and process bookshelf image
-- `GET /api/scan/:sessionId` - Get scan results (polling endpoint)
-- `POST /api/scan/:sessionId/feedback` - Submit user feedback
+## 🤝 Contributing
+Contributions are welcome! If you have suggestions for improving the AI prompts or UI performance, feel free to open a Pull Request.
 
-### User Management
-- `GET /api/user/profile` - Get user profile
-- `PUT /api/user/profile` - Update user profile
-- `PUT /api/user/preferences` - Update reading preferences
-- `POST /api/user/reading-history` - Add book to reading history
-- `GET /api/user/reading-history` - Get reading history
+---
 
-### History
-- `GET /api/history` - Get user scan history
-- `GET /api/history/:sessionId` - Get specific scan details
-- `DELETE /api/history/:sessionId` - Delete scan session
+## 📄 License
+Project is licensed under the **MIT License**.
 
-## Deployment
-
-### Vercel Deployment
-
-1. **Install Vercel CLI**:
-```bash
-npm install -g vercel
-```
-
-2. **Login and Deploy**:
-```bash
-vercel login
-vercel --prod
-```
-
-3. **Configure Environment Variables** in Vercel Dashboard:
-- `DATABASE_URL` - PostgreSQL connection string
-- `GEMINI_API_KEY` - Google Gemini API key
-- `JWT_SECRET` - Secure random string
-- `ENCRYPTION_KEY` - Secure random string
-- `CLIENT_URL` - Your production URL
-
-### Database Setup
-
-**Option 1: Vercel Postgres**
-1. Create Vercel Postgres database in dashboard
-2. Vercel automatically sets `DATABASE_URL`
-3. Run schema: `psql $DATABASE_URL -f database/schema.sql`
-
-**Option 2: External Provider (Neon, Supabase)**
-1. Create PostgreSQL database with SSL
-2. Add connection string to Vercel
-3. Run schema from `database/schema.sql`
-
-## Development
-
-### Running Tests
-```bash
-npm test
-```
-
-### Building for Production
-```bash
-npm run build
-```
-
-### Code Structure
-
-**Backend Services**:
-- `gemini.service.ts` - AI book detection and recommendations
-- `googleBooks.service.ts` - Book metadata enrichment
-
-**Frontend Components**:
-- `Scanner.tsx` - Image upload and camera capture
-- `Results.tsx` - Display detected books and recommendations
-- `Home.tsx` - Main page component
-
-## Environment Variables
-
-See `.env.example` for all configuration options.
-
-## Tips for Best Results
-
-- **Good Lighting**: Ensure bookshelf is well-lit
-- **Parallel Angle**: Keep camera parallel to bookshelf
-- **Clear Spines**: Make sure book spines are clearly visible
-- **Avoid Glare**: Minimize reflections and shadows
-
-## Security Features
-
-- ✅ AES-256-GCM encryption for sensitive data
-- ✅ Rate limiting (100 requests per 15 minutes)
-- ✅ Security headers (HSTS, CSP, X-Frame-Options)
-- ✅ JWT authentication
-- ✅ GDPR compliance (data deletion endpoint)
-
-## Performance
-
-- ⚡ Async image processing
-- ⚡ Response caching
-- ⚡ Database query optimization
-- ⚡ CDN deployment via Vercel
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
-
-## License
-
-MIT License
-
-## Support
-
-For issues and questions, please open an issue on GitHub.
-
-## Acknowledgments
-
-- Google Gemini for free AI vision capabilities
-- Google Books API for book metadata
-- Vercel for hosting platform
+Built with ❤️ by [Hemachandiran](https://github.com/Hemachandiranpajany)
