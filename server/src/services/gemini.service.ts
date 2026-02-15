@@ -12,8 +12,9 @@ class GeminiService {
     if (!apiKey) throw new Error('GEMINI_API_KEY is missing');
 
     this.genAI = new GoogleGenerativeAI(apiKey);
-    // Use flash-8b for maximum speed in serverless environments
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }, { apiVersion: 'v1' });
+    const modelName = 'gemini-flash-latest';
+    logger.info('Initializing Gemini model', { modelName, source: 'working-alias' });
+    this.model = this.genAI.getGenerativeModel({ model: modelName });
   }
 
   async detectBooksFromImage(imageData: Buffer | string): Promise<GeminiResponse> {
@@ -54,6 +55,7 @@ class GeminiService {
       if (!jsonMatch) throw new Error('No JSON found');
       return JSON.parse(jsonMatch[0]).recommendations;
     } catch (error) {
+      logger.error('Gemini recommendations failed', { error });
       return [];
     }
   }
