@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
 import { db } from '../utils/database';
+import { logger } from '../utils/logger';
 import { encryption } from '../utils/encryption';
 import { geminiService } from '../services/gemini.service';
 import { AuthRequest } from '../types';
@@ -96,9 +97,18 @@ router.get('/:sessionId/recommendations', async (req: Request, res: Response) =>
     }
 
     await db.query(`UPDATE scan_sessions SET status = 'completed' WHERE id = $1`, [sessionId]);
-    return res.json(recommendations);
+
+    // Fetch the saved recommendations to return them with correct IDs and field names
+    const finalRecommendations = await db.query(
+      `SELECT id, scan_session_id, title, author, recommendation_score, reasoning, rank 
+       FROM recommendations WHERE scan_session_id = $1 ORDER BY rank ASC`,
+      [sessionId]
+    );
+
+    return res.json(finalRecommendations.rows);
 
   } catch (error) {
+    logger.error('Phase 2 Recommendations Error', { error });
     return res.status(500).json({ error: 'Failed to generate recommendations' });
   }
 });
