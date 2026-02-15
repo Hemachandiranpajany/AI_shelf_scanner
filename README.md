@@ -10,12 +10,13 @@ Standing in front of shelves packed with books but unsure where to start? Whethe
 
 ---
 
-## 🚀 Key Features
+## � How ShelfScanner Helps
 
-*   📷 **Neural Book Recognition**: Powered by Google Gemini 1.5 Flash for high-accuracy spine detection.
-*   🧠 **Context-Aware Recommendations**: Phase-based AI generation that analyzes your shelf's "vibe" to suggest 5 new titles.
-*   🖼️ **Metada Enrichment**: Automatic fetching of covers, ratings, and descriptions via Google Books API.
-*   👤 **Hybrid Auth**: Anonymous instant scans for guests with optional JWT-based history for registered users.
+📷 **Snap & Scan** → Take a clear photo of any bookshelf spines you encounter  
+🧠 **AI Vision** → Let Gemini instantly identify every title and author for you  
+🖼️ **Enriched Insights** → View covers, ratings, and descriptions fetched via Google Books  
+✨ **Custom Recommendations** → Get 5 high-accuracy book suggestions based on your shelf  
+🌟 **Hidden Gems** → Ensure the perfect next read never slips through your fingers  
 
 ---
 
