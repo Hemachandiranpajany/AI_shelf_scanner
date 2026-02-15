@@ -28,18 +28,12 @@ const Home: React.FC = () => {
       <section className="hero-section">
         <div className="container">
           <h1 className="hero-title animate-slide-up">
-            Smart bookshelf scanning meets <span className="gradient-text">intelligent book recommendations</span>
+            Smart bookshelf scanning meets <br />intelligent recommendations
           </h1>
           <p className="hero-quote animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            Never miss a book you’ll love.
+            "Smart bookshelf scanning meets intelligent book recommendations. <br />
+            <strong>Never miss a book you’ll love.</strong>"
           </p>
-        </div>
-      </section>
-
-      {/* Main Scanner Section */}
-      <section className="scanner-section animate-slide-up" style={{ animationDelay: '0.2s' }}>
-        <div className="container">
-          <Scanner onScanComplete={handleScanComplete} />
         </div>
       </section>
 
@@ -67,6 +61,13 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* Main Scanner Section */}
+      <section className="scanner-section">
+        <div className="container">
+          <Scanner onScanComplete={handleScanComplete} />
+        </div>
+      </section>
+
       {/* Closing Section */}
       <section className="closing-section">
         <div className="container text-center">
@@ -75,7 +76,7 @@ const Home: React.FC = () => {
             ShelfScanner makes it easy to spot books you'll enjoy even in a sea of unfamiliar titles.
           </p>
           <div className="closing-action">
-            <button className="btn btn-primary btn-large" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <button className="btn btn-white" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
               Start Scanning Now
             </button>
           </div>
