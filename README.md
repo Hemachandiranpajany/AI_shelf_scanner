@@ -1,11 +1,12 @@
 # 📚 Shelf Scanner
+**Don’t let great books slip through your fingers.**
+
+Standing in front of shelves packed with books but unsure where to start? Whether you're at a sale, library, or visiting a friend, ShelfScanner helps you identify hidden gems using AI-powered recommendations tailored to your taste.
 
 [![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-success?logo=vercel&logoColor=white)](https://vercel.com)
 [![Tech Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node%20%7C%20Postgres-blue)](https://github.com/Hemachandiranpajany/AI_shelf_scanner)
 [![AI Powered](https://img.shields.io/badge/AI-Gemini%201.5%20Flash-orange?logo=google-gemini&logoColor=white)](https://aistudio.google.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-An intelligent full-stack book discovery engine that transforms photos of your physical bookshelf into actionable digital insights and personalized recommendations.
 
 ---
 
@@ -13,7 +14,6 @@ An intelligent full-stack book discovery engine that transforms photos of your p
 
 *   📷 **Neural Book Recognition**: Powered by Google Gemini 1.5 Flash for high-accuracy spine detection.
 *   🧠 **Context-Aware Recommendations**: Phase-based AI generation that analyzes your shelf's "vibe" to suggest 5 new titles.
-*   ⚡ **Serverless Optimized**: Custom image pipeline designed to run within Vercel's 10-second free tier budget.
 *   🖼️ **Metada Enrichment**: Automatic fetching of covers, ratings, and descriptions via Google Books API.
 *   👤 **Hybrid Auth**: Anonymous instant scans for guests with optional JWT-based history for registered users.
 
@@ -32,15 +32,33 @@ An intelligent full-stack book discovery engine that transforms photos of your p
 
 ---
 
-## 🏗️ Architectural Excellence: The "10s Optimized" Suite
+## 🏗️ Project Architecture
 
-To handle heavy AI processing on Vercel's 10-second free tier, we implemented several engineering optimizations:
-
-1.  **Client-Side Image Siphoning**: Images are automatically compressed to 1200px (JPEG 80%) in the browser before upload, reducing network latency by ~70%.
-2.  **Phased Processing**:
-    *   **Phase 1 (Detection)**: Rapid spine identification (3-5s).
-    *   **Phase 2 (Background Recommendations)**: Triggered post-UI load to grant the AI a fresh 10s window.
-3.  **Lazy Initialization**: Core services (DB Pool, Encryption, Gemini) initialize only when needed to minimize serverless cold-start overhead.
+```
+ShelfScanner/
+├── client/src/              # React frontend
+│   ├── components/         # Reusable UI components
+│   │   ├── ui/            # Shadcn/ui base components
+│   │   ├── book-scanner/  # Book scanning interface
+│   │   └── layout/        # Navigation and layout
+│   ├── pages/             # Application routes/pages
+│   ├── hooks/             # Custom React hooks
+│   ├── contexts/          # React contexts (Theme, Device)
+│   └── lib/               # Utilities and API clients
+├── server/                # Express.js backend
+│   ├── routes.ts          # Main API routes
+│   ├── books.ts           # Book data services
+│   ├── openai-*.ts        # AI integration services
+│   ├── book-cache-service.ts # Caching layer
+│   ├── storage.ts         # Database operations
+│   └── middleware/        # Express middleware
+├── shared/                # Shared TypeScript types
+│   └── schema.ts          # Database schema definitions
+├── api/                   # Vercel API routes
+├── public/                # Static assets
+├── tests/                 # Test files
+└── scripts/               # Utility scripts
+```
 
 ---
 
@@ -91,11 +109,6 @@ To handle heavy AI processing on Vercel's 10-second free tier, we implemented se
 | `GET` | `/api/scan/:id/recommendations` | Trigger Phase 2 (AI Analysis) |
 | `POST` | `/api/scan/:id/feedback` | Submit corrections to the AI result |
 
-### User Endpoints
-- `GET /api/user/profile` - JWT Protected profile data
-- `PUT /api/user/preferences` - Update AI recommendation weights
-- `GET /api/history` - Retrieve all past scan sessions
-
 ---
 
 ## 🔒 Security & Performance
@@ -114,3 +127,9 @@ Contributions are welcome! If you have suggestions for improving the AI prompts 
 Project is licensed under the **MIT License**.
 
 Built with ❤️ by [Hemachandiran](https://github.com/Hemachandiranpajany)
+
+---
+
+❌ **Commercial Use**: Commercial use is strictly prohibited  
+❌ **Distribution**: You may not distribute, modify, or create derivative works  
+❌ **Deployment**: You may not deploy this application for public or commercial use
