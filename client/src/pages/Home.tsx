@@ -31,9 +31,16 @@ const Home: React.FC = () => {
             Smart bookshelf scanning meets <br />intelligent recommendations
           </h1>
           <p className="hero-quote animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            "Smart bookshelf scanning meets intelligent book recommendations. <br />
-            <strong>Never miss a book you’ll love.</strong>"
+            "Never miss a book you’ll love."
           </p>
+        </div>
+      </section>
+
+      {/* Main Scanner Section - NOW AT TOP */}
+      <section className="scanner-section animate-slide-up" style={{ animationDelay: '0.2s', paddingTop: '0' }}>
+        <div className="container text-center">
+          <p className="scanner-prompt">Capture your bookshelf to get AI recommendations instantly.</p>
+          <Scanner onScanComplete={handleScanComplete} />
         </div>
       </section>
 
@@ -58,13 +65,6 @@ const Home: React.FC = () => {
               <p>Receive 5 high-accuracy book recommendations tailored specifically to the collection you just scanned.</p>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Main Scanner Section */}
-      <section className="scanner-section">
-        <div className="container">
-          <Scanner onScanComplete={handleScanComplete} />
         </div>
       </section>
 

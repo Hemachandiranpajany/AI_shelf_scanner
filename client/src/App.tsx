@@ -12,9 +12,6 @@ const App: React.FC = () => {
             <Link to="/" className="logo">
               📚 Shelf Scanner
             </Link>
-            <nav>
-              <Link to="/">Scan</Link>
-            </nav>
           </div>
         </header>
 

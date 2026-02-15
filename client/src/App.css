@@ -87,7 +87,7 @@ nav a:hover {
 
 /* Hero Section */
 .hero-section {
-  padding: 8rem 0 4rem;
+  padding: 4rem 0 2rem;
   text-align: center;
 }
 
@@ -172,7 +172,14 @@ nav a:hover {
 
 /* Scanner Overhaul */
 .scanner-section {
-  padding: 8rem 0;
+  padding: 2rem 0 6rem;
+}
+
+.scanner-prompt {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 2rem;
 }
 
 .scanner-card {
