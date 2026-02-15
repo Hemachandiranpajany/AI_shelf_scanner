@@ -31,7 +31,7 @@ const Home: React.FC = () => {
             Smart bookshelf scanning meets <br />intelligent recommendations
           </h1>
           <p className="hero-quote animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            "Never miss a book you’ll love."
+            Never miss a book you’ll love
           </p>
         </div>
       </section>

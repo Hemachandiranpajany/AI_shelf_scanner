@@ -87,28 +87,26 @@ nav a:hover {
 
 /* Hero Section */
 .hero-section {
-  padding: 4rem 0 2rem;
+  padding: 3rem 0 1rem;
   text-align: center;
 }
 
 .hero-title {
-  font-size: 4rem;
+  font-size: clamp(2rem, 8vw, 3.5rem);
   font-weight: 800;
   line-height: 1.1;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   color: var(--primary);
   letter-spacing: -0.03em;
 }
 
 .hero-quote {
-  font-size: 1.5rem;
+  font-size: clamp(1rem, 4vw, 1.25rem);
   color: var(--text-secondary);
-  max-width: 700px;
+  max-width: 600px;
   margin: 0 auto;
-  font-weight: 400;
-  border-left: 3px solid var(--primary);
-  padding-left: 2rem;
-  text-align: left;
+  font-weight: 500;
+  text-align: center;
 }
 
 /* Page Subtitles */
@@ -172,14 +170,14 @@ nav a:hover {
 
 /* Scanner Overhaul */
 .scanner-section {
-  padding: 2rem 0 6rem;
+  padding: 1.5rem 0 4rem;
 }
 
 .scanner-prompt {
-  font-size: 1.25rem;
+  font-size: clamp(0.95rem, 3vw, 1.15rem);
   font-weight: 600;
   color: var(--primary);
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .scanner-card {
